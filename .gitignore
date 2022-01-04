@@ -1,2 +1,4 @@
 *.mid
 *.MID
+
+dist/
