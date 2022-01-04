@@ -13,8 +13,6 @@ const (
 	TrackHeaderLength = 8
 )
 
-//go:generate stringer -type MsgType
-
 // MsgType is channel message type
 type MsgType byte
 
@@ -259,48 +257,4 @@ func Decode(r io.Reader) (*SMF, error) {
 	}
 
 	return s, nil
-}
-
-func Encode(w io.Writer, s *SMF) error {
-	return nil
-}
-
-func SwapTrack(dst io.Writer, src io.Reader, a, b int) error {
-	buf, err := io.ReadAll(src)
-	if err != nil {
-		return err
-	}
-
-	r := bytes.NewReader(buf)
-	h, err := readHeader(r)
-	if err != nil {
-		return err
-	}
-
-	if (a <= 0 && int(h.NumTrack) <= a) || (b <= 0 && int(h.NumTrack) <= b) {
-		return errors.New("smftool: invalid a or b")
-	}
-
-	tracks, err := readTracks(r, int(h.NumTrack))
-	if err != nil {
-		return err
-	}
-
-	tstarts := make([]int, len(tracks))
-	tends := make([]int, len(tracks))
-	tstarts[0] = HeaderLength
-	tends[0] = tstarts[0] + TrackHeaderLength + int(tracks[0].Header.Length)
-	for i := 1; i < len(tracks); i++ {
-		tstarts[i] = tends[i-1]
-		tends[i] = tstarts[i] + TrackHeaderLength + int(tracks[i].Header.Length)
-	}
-	tstarts[a], tstarts[b] = tstarts[b], tstarts[a]
-	tends[a], tends[b] = tends[b], tends[a]
-
-	dst.Write(buf[:HeaderLength])
-	for i := range tracks {
-		dst.Write(buf[tstarts[i]:tends[i]])
-	}
-
-	return nil
 }
